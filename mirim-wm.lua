@@ -1,17 +1,22 @@
 
--- Codigo de exemplo, soma 3 com 2 e imprime o resultado
+-- Codigo de exemplo, coloca 3 e 0.14 na pilha, soma e define como sendo pi
 
 local asm = [[
 
-empurrar_numero     3
-empurrar_numero     2
+empurrar_numero     3.00
+mpurrar_numero      0.14
 adicionar
+
+definir_variavel    pi
+
+puxar_variavel      pi
 escrever
 
 ]]
 
 local stake = {}  -- Pilha principal
 local rom = {}    -- Área da memória protegida somente leitura
+local ram = {}    -- Área da memória que o programa pode escrever
 local cursor = 0  -- Posição atual do cursor, como Lua começa em 1, o cursor deve começar com 0
 
 -- Conjunto inicial de instruções
@@ -20,6 +25,19 @@ local instrucoes = {
     empurrar_numero =
       function (arg)
         stake[#stake+1] = tonumber(arg) or math.abs(0/0)
+      end
+    ;
+    -- Armazena o valor no topo da pilha na variável
+    definir_variavel =
+      function (arg)
+        ram[arg] = stake[1]
+        stake = {} -- Limpa a pilha para evitar lixo
+      end
+    ;
+    -- Pega o valor de uma variável na "RAM"
+    puxar_variavel =
+      function (arg)
+        stake[#stake+1] = ram[arg]
       end
     ;
     -- Adiciona os valores da pilha
