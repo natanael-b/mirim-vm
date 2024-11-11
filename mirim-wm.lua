@@ -1,23 +1,25 @@
 
--- Codigo de exemplo, coloca 3 e 0.14 na pilha, soma e define como sendo pi
+-- Empurra 2 numeros iguais e realiza comparações
 
 local asm = [[
 
-empurrar_numero     3.00
-mpurrar_numero      0.14
-adicionar
+empurrar_numero     2
+empurrar_numero     2
 
-definir_variavel    pi
-
-puxar_variavel      pi
 escrever
 
+inverter
+escrever
+
+condicionar
+empurrar_numero     3
 ]]
 
-local stake = {}  -- Pilha principal
-local rom = {}    -- Área da memória protegida somente leitura
-local ram = {}    -- Área da memória que o programa pode escrever
-local cursor = 0  -- Posição atual do cursor, como Lua começa em 1, o cursor deve começar com 0
+local stake = {}           -- Pilha principal
+local rom = {}             -- Área da memória protegida somente leitura
+local ram = {}             -- Área da memória que o programa pode escrever
+local cursor = 0           -- Posição atual do cursor, como Lua começa em 1, o cursor deve começar com 0
+local pularProxima = false -- se verdadeiro, pula a proxima linha na leitura da "ROM"
 
 -- Conjunto inicial de instruções
 local instrucoes = {
@@ -38,6 +40,27 @@ local instrucoes = {
     puxar_variavel =
       function (arg)
         stake[#stake+1] = ram[arg]
+      end
+    ;
+    -- Compara os dois valores no topo da pilha são igual
+    igual =
+      function ()
+        local result = stake[1] == stake[2]
+        stake = {}
+        stake[1] = result -- Limpa a pilha para evitar lixo
+      end
+    ;
+    -- Inverte o valor no topo da pilha
+    inverter =
+      function ()
+        stake[1] = not stake[1]
+      end
+    ;
+    -- Só permite a execução da próxima linha se o primeiro valor no topo da pilha for verdadeiro
+    condicionar =
+      function ()
+        pularProxima = not stake[1]
+        stake = {} -- Limpa a pilha para evitar lixo
       end
     ;
     -- Adiciona os valores da pilha
@@ -72,9 +95,11 @@ while cursor < #rom do
     local instrucao = rom[cursor]:gsub("[%s].*","")
     -- Argumento é o que vem depois cada instrução ou tem um argumento ou tem nenhum
     local argumento = rom[cursor]:gsub("^.*[%s]","")
-    local funcao = instrucoes[instrucao]
-    if not funcao then
-        error("Instrução desconhecida próximo a linha "..cursor.." => '"..instrucao.."'")
+
+    if pularProxima then
+        -- restaura o estado de pularProxima se pular a linha atual
+        pularProxima = false
+    else
+        instrucoes[instrucao](argumento)
     end
-    instrucoes[instrucao](argumento)
 end
